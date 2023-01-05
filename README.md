@@ -1,12 +1,12 @@
 # go-nut-snmpagent
 
-This very rudimentary package attempts to create a single executable that exposes the NUT variables from a connected UPS as SNMP; essentially, what nut-snmpagent does, without Ruby or any other interpreted language (e.g. scripts et. al.).
+This very rudimentary package attempts to create a single executable that exposes the NUT variables from a connected UPS as SNMP; essentially, what [`nut-snmpagent`](https://github.com/luizluca/nut-snmpagent) does, without Ruby or any other interpreted language (e.g. scripts et. al.) — but using the AgentX protocol instead.
 
 ## Prerequisites
 
 -   [Network UPS Tools](https://networkupstools.org/) (NUT) installed, configured and running
 -   NUT-supported UPS connected to system and fully operational
--   SNMP daemon (e.g. [NET-SNMP 5.9](http://www.net-snmp.org/running) running on the same server
+-   SNMP daemon (e.g. [NET-SNMP 5.9](http://www.net-snmp.org/running) running on the same server, supporting the [AgentX protocol](https://www.rfc-editor.org/rfc/rfc2741)
 -   A fairly recent Go compiler (requires at least modules to work)
 
 ## Installing go-nut-snmpagent
@@ -29,15 +29,31 @@ Of course, if you need _authentication_, then you _might_ need to configure NUT 
 
 ## SNMP configuration
 
-On your `/etc/snmp/snmp.conf` just put the following line:
+1. On your `/etc/snmp/snmp.conf` just make sure you have something like this:
 
 ```
-pass_persist .1.3.6.1.4.1.26376.99 /path/where/you/compiled/go-nut-snmpagent
+com2sec         notConfigUser  default       public
+group           notConfigGroup v1            notConfigUser
+group           notConfigGroup v2c           notConfigUser
+access          notConfigGroup ""            any  noauth exact systemview none none
+
+view            systemview     included      .1
+master  agentx
+agentxperms 770 770 daemon users
+
 ```
 
-Restart the SNMP server daemon (e.g. `sudo systemctl restart snmpd` on most `systemd`-based Un\*xes).
+2. Restart the SNMP server daemon (e.g. `sudo systemctl restart snmpd` on most `systemd`-based Un\*xes).
 
-Then try to do a `snmpwalk -v 2c public .1.3.6.1.4.1.263` to see if you can connect to the UPS and extract its data/parameters!
+3. Launch `$ ./go-nut-snmpagent`. If all goes well, it should connect to the SNMP server _and_ the NUT server, and start transcoding the information it gets from NUT into SNMP, automagically.
+
+4. Then try to do a `snmpwalk -v 2c -c public localhost .1.3.6.1.4.1.318` to see if you can get all the data via SNMP!
+
+## Final steps
+
+You might wish to add `go-nut-snmpagent` to `systemd` (on Linux, including the Raspberry Pi, Synology NAS, and many other embedded systems) or `launchd` (on macOS), or, if you're so bold, launch it as a service under Windows. Appropriate defaults are found on the `/scripts` directory (Windows instructions not included, since I have no clue how _that_ works).
+
+**TODO:** add more scripts for older methods (e.g. `/etc/init.d`/`/etc/rc.d` or similar Jurassic setups).
 
 ## Direct dependencies
 
@@ -47,9 +63,9 @@ Direct compilation tested so far on macOS Bug Sur (Intel amd64), RaspberryOS (De
 
 ## Contributions
 
-All are most welcome! Just fork the project on Github and submit a PR. If I get more than one contributor, I'll add an automated task to credit you here :-)
+All contributions/submare most welcome! Just fork the project on Github and submit a PR. If I get more than one contributor, I'll add an automated task to credit you here :-)
 
-Special thanks to [@luizluca](https://github.com/luizluca/) for his outstanding work of creating [`nut-snmpagent`](https://github.com/luizluca/nut-snmpagent) (using a lot of tools, some Ruby and some shell scripting), on which this bit of code is based on.
+Special thanks to [@luizluca](https://github.com/luizluca/) for his outstanding work of creating [`nut-snmpagent`](https://github.com/luizluca/nut-snmpagent) (using a lot of tools, some Ruby and some shell scripting), on which some of this code is based on. @luizluca actually uses an older mechanism to communicate with the SNMP server daemon; we use AgentX. 
 
 And, of course, thanks to all those nice people out there writing Go libraries to read INI files (@unknwon), access NUT, and talk SNMP, all with native Go libraries!
 

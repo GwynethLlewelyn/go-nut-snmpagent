@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Sample go-nut-snmpagent configuration file for Darwin/macOS; fill in the missing data as needed -->
+<plist version="1.0">
+<dict>
+		<key>Label</key>
+		<string></string>
+		<key>ProgramArguments</key>
+		<array>
+				<string>/path/to/go-nut-snmpagent</string>
+		</array>
+		<key>StartInterval</key>
+				<integer>300</integer>
+		<key>RunAtLoad</key>
+		<true/>
+		<key>StandardErrorPath</key>
+		<string>/Users/{{ your username here }}/Library/Logs/local.rsync.log</string>
+		<key>StandardOutPath</key>
+		<string>/Users/{{ your username here }/Library/Logs/local.rsync.log</string>
+</dict>
+</plist>

@@ -1,0 +1,21 @@
+# Don't forget to fill in the data for User/Group/etc. Avoid root or system, this should run in userland.
+# WorkingDirectory is the absolute path for the directory where you placed go-nut-snmpagent
+# ExecStart will be something like {WorkingDirectory}/go-nut-snmpagent
+[Unit]
+Description=AgentX-compatible SNMP interface to APC UPS connected to NUT
+After=syslog.target
+After=network.target
+After=snmpd.service
+BindsTo=snmpd.service
+
+[Service]
+Type=simple
+User=
+Group=
+WorkingDirectory=
+ExecStart=
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+Wants=snmpd.service

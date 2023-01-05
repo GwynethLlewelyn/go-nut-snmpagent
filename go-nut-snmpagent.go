@@ -13,6 +13,9 @@ import (
 
 	"github.com/robbiet480/go.nut"
 	"gopkg.in/ini.v1"
+	"github.com/posteo/go-agentx"
+	"github.com/posteo/go-agentx/pdu"
+	"github.com/posteo/go-agentx/value"
 )
 
 // // Authentication object, which will be embedded later to reflect the INI structure.
@@ -23,15 +26,18 @@ import (
 
 // GNSConfig ia a configuration object, to be filled in later.
 type GNSConfig struct {
-	NUTServer string `validate:"ip|hostname" ini:"hostname"`
-//	*GNSAuth  `ini:"auth"`
-	Username string
-	Password string
+	NUTserver string	`validate:"ip|hostname"`	// NUT server to contact.
+//	*GNSAuth  `ini:"auth"`							// I have trouble parsing sections...
+	Username string									// Username to connect to the NUT server.
+	Password string									// Password for the connection with NUT server.
+	SNMPserver string	`validate:"ip|hostname"`	// SNMP server to contact.
+	SNMPport int		`validate:"integer"`		// AgentX port for SNMP server (default 705).
+	SubagentOID string	`validate:""`				// OID for subagent to attach to (default PowerNet-MIB { iso org(3) dod(6) internet(1) private(4) enterprises(1) apc(318) }).
 }
 
 // getFirstUPS connects to NUT, authenticates and returns the first UPS listed.
 func getFirstUPS(config *GNSConfig) (*nut.UPS, error) {
-	client, err := nut.Connect(config.NUTServer)
+	client, err := nut.Connect(config.NUTserver)
 	if err != nil {
 		return nil, fmt.Errorf("NUT connection error: %v", err)
 	}
@@ -76,7 +82,10 @@ func main() {
 	// 	},
 	// }
 	config := &GNSConfig{
-		NUTServer: "127.0.0.1",
+		NUTserver: "127.0.0.1",				// localhost
+		SNMPserver: "127.0.0.1",
+		SNMPport: 705,						// Default for AgentX connection
+		SubagentOID: ".1.3.6.1.4.1.318",	// PowerNet-MIB { iso org(3) dod(6) internet(1) private(4) enterprises(1) apc(318) }
 		Username: "",
 		Password: "",
 	}
@@ -102,4 +111,14 @@ func main() {
 			fmt.Printf("%s (%s)\n", cmd.Name, cmd.Description)
 		}
 	}
+	variables, err := myUPS.GetVariables()
+	if err != nil {
+		fmt.Printf("could not read list of variables for UPS %q: %v\n", myUPS.Name, err)
+	} else {
+		fmt.Printf("Variables available for UPS %q:\n", myUPS.Name)
+		for _, vars := range variables {
+			fmt.Printf("%s: %v (%s)\n", vars.Name, vars.Value, vars.Description)
+		}
+	}
+	// We ought to do some magic mapping
 }
