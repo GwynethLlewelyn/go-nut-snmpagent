@@ -11,11 +11,11 @@ import (
 	"fmt"
 	"os"
 
+//	"github.com/posteo/go-agentx"
+	"github.com/posteo/go-agentx/pdu"
+//	"github.com/posteo/go-agentx/value"
 	"github.com/robbiet480/go.nut"
 	"gopkg.in/ini.v1"
-	"github.com/posteo/go-agentx"
-	"github.com/posteo/go-agentx/pdu"
-	"github.com/posteo/go-agentx/value"
 )
 
 // // Authentication object, which will be embedded later to reflect the INI structure.
@@ -34,6 +34,13 @@ type GNSConfig struct {
 	SNMPport int		`validate:"integer"`		// AgentX port for SNMP server (default 705).
 	SubagentOID string	`validate:""`				// OID for subagent to attach to (default PowerNet-MIB { iso org(3) dod(6) internet(1) private(4) enterprises(1) apc(318) }).
 }
+
+type oneOID struct {
+	NUTvar string			// NUT UPS VARIABLE NAME
+	NUTvalue interface{}	// value expressed in different possoble formats
+	NUTtype pdu.VariableType		// essentially a
+}
+
 
 // getFirstUPS connects to NUT, authenticates and returns the first UPS listed.
 func getFirstUPS(config *GNSConfig) (*nut.UPS, error) {
@@ -120,5 +127,64 @@ func main() {
 			fmt.Printf("%s: %v (%s)\n", vars.Name, vars.Value, vars.Description)
 		}
 	}
-	// We ought to do some magic mapping
+	// We ought to do some magic mapping between the MIB and the NJUT variables... they do not exactly overlap
+
+	var oneMap = &[]oneOID{
+		{"battery.charge", 100, pdu.VariableTypeInteger},
+		{"battery.charge.low", 10, pdu.VariableTypeInteger},
+		{"battery.charge.warning", 50, pdu.VariableTypeInteger},
+		{"battery.mfr.date", "2022/02/18", pdu.VariableTypeOctetString},	// date YYYY/MM/DD
+		{"battery.runtime", 3720, pdu.VariableTypeInteger},
+		{"battery.runtime.low", 120, pdu.VariableTypeInteger},
+		{"battery.temperature", 270, pdu.VariableTypeInteger},	// divide by 10
+		{"battery.type", "PbAc", pdu.VariableTypeOctetString},
+		{"battery.voltage", 275, pdu.VariableTypeInteger},		// divide by 10
+		{"battery.voltage.nominal", 240, pdu.VariableTypeInteger}, // divide by 10
+		{"device.mfr", "American Power Conversion", pdu.VariableTypeOctetString},
+		{"device.model", "Smart-UPS 1000", pdu.VariableTypeOctetString},
+		{"device.serial", "AS0632330748", pdu.VariableTypeOctetString},
+		{"device.type", "ups", pdu.VariableTypeOctetString},
+		{"driver.name", "usbhid-ups", pdu.VariableTypeOctetString},
+		{"driver.parameter.bus", "001", pdu.VariableTypeOctetString},
+		{"driver.parameter.pollfreq", 30, pdu.VariableTypeInteger},
+		{"driver.parameter.pollinterval", 2, pdu.VariableTypeInteger},
+		{"driver.parameter.port", "auto", pdu.VariableTypeOctetString},
+		{"driver.parameter.product", "Smart-UPS 1000 FW:652.13.I USB FW:7.3", pdu.VariableTypeOctetString},
+		{"driver.parameter.productid", "0002", pdu.VariableTypeOctetString},
+		{"driver.parameter.serial", "AS0632330748", pdu.VariableTypeOctetString},
+		{"driver.parameter.synchronous", "no", pdu.VariableTypeOctetString},
+		{"driver.parameter.vendor", "American Power Conversion", pdu.VariableTypeOctetString},
+		{"driver.parameter.vendorid", "051D", pdu.VariableTypeOctetString},
+		{"driver.version", "2.7.4", pdu.VariableTypeOctetString},
+		{"driver.version.data", "APC HID 0.96", pdu.VariableTypeOctetString},
+		{"driver.version.internal", "0.41", pdu.VariableTypeOctetString},
+		{"input.sensitivity", "medium", pdu.VariableTypeOctetString},
+		{"input.transfer.high", 2530, pdu.VariableTypeInteger},	//divide by 10
+		{"input.transfer.low", 2080, pdu.VariableTypeInteger},// divide by 10
+		{"input.voltage", 2260, pdu.VariableTypeInteger},	// divide by 10
+		{"output.current", 46, pdu.VariableTypeInteger},	// divide by 100
+		{"output.frequency", 500, pdu.VariableTypeInteger},	// divide by 10
+		{"output.voltage", 2260, pdu.VariableTypeInteger},	// divide by 10
+		{"output.voltage.nominal", 2300, pdu.VariableTypeInteger},	// divide by 10
+		{"ups.beeper.status", "disabled", pdu.VariableTypeOctetString},
+		{"ups.delay.shutdown", 20, pdu.VariableTypeInteger},
+		{"ups.delay.start", 30, pdu.VariableTypeInteger},
+		{"ups.firmware", "652.13.I", pdu.VariableTypeOctetString},
+		{"ups.firmware.aux", "7.3", pdu.VariableTypeOctetString},
+		{"ups.load", 169, pdu.VariableTypeGauge32},		// divide by 10
+		{"ups.mfr", "American Power Conversion", pdu.VariableTypeOctetString},
+		{"ups.mf22r.date", "2006/08/03", pdu.VariableTypeOctetString},	// date YYYY/MM/DD
+		{"ups.model", "Smart-UPS 1000", pdu.VariableTypeOctetString},
+		{"ups.productid", "0002", pdu.VariableTypeOctetString},
+		{"ups.serial", "AS0632330748", pdu.VariableTypeOctetString},
+		{"ups.status", "OL", pdu.VariableTypeOctetString},
+		{"ups.test.result", "No test initiated", pdu.VariableTypeOctetString},
+		{"ups.timer.reboot", -1, pdu.VariableTypeInteger},
+		{"ups.timer.shutdown", -1, pdu.VariableTypeInteger},
+		{"ups.timer.start", -1, pdu.VariableTypeInteger},
+		{"ups.vendorid", "051d", pdu.VariableTypeOctetString},
+	}
+	for _, apcRawData := range *oneMap {
+		fmt.Printf("%s: %v (%s)\n", apcRawData.NUTvar, apcRawData.NUTvalue, apcRawData.NUTtype.String())
+	}
 }
