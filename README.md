@@ -1,6 +1,8 @@
 [![Logo](assets/images/go-nut-snmpagent-thumb.png)](assets/images/go-nut-snmpagent.png)
 # go-nut-snmpagent
 
+[![Go](https://github.com/GwynethLlewelyn/go-nut-snmpagent/actions/workflows/go.yml/badge.svg)](https://github.com/GwynethLlewelyn/go-nut-snmpagent/actions/workflows/go.yml) [![CodeQL](https://github.com/GwynethLlewelyn/go-nut-snmpagent/actions/workflows/codeql.yml/badge.svg)](https://github.com/GwynethLlewelyn/go-nut-snmpagent/actions/workflows/codeql.yml) [![Codacy Security Scan](https://github.com/GwynethLlewelyn/go-nut-snmpagent/actions/workflows/codacy.yml/badge.svg)](https://github.com/GwynethLlewelyn/go-nut-snmpagent/actions/workflows/codacy.yml)
+
 This very rudimentary package attempts to create a single executable that exposes the NUT variables from a connected UPS as SNMP; essentially, what [`nut-snmpagent`](https://github.com/luizluca/nut-snmpagent) does, without Ruby or any other interpreted language (e.g. scripts et. al.) — but using the AgentX protocol instead.
 
 ## Prerequisites
