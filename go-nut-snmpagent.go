@@ -40,6 +40,7 @@ type oneOID struct {
 	NUTvalue interface{}			// value expressed in different possible formats (string, integer. etc.)
 	NUTtype pdu.VariableType		// essentially to tell what type that value comes from, as per SNMP specs.
 	SNMPoid string					// OID for this mapping (NUT var name <-> OID).
+	SNMPname string					// Name for this mapping (e.g. PowerNet-MIB::upsHighPrecExtdBatteryTemperature)
 	SNMPdesc string					// SNMP description of this mapping.
 }
 
@@ -64,7 +65,7 @@ func getFirstUPS(config *GNSConfig) (*nut.UPS, error) {
 	if err != nil {
 		return nil, fmt.Errorf("NUT getting UPS list error: %v", err)
 	}
-	fmt.Printf("\n[DEBUG]---------\nFirst UPS: %#v\n---------\n[/DEBUG]\n", upsList[0])
+	// fmt.Printf("\n[DEBUG]---------\nFirst UPS: %#v\n---------\n[/DEBUG]\n", upsList[0])
 	return &upsList[0], nil
 }
 
@@ -94,7 +95,7 @@ func main() {
 		NUTserver: "127.0.0.1",				// localhost
 		SNMPserver: "127.0.0.1",
 		SNMPport: 705,						// Default for AgentX connection
-		SubagentOID: ".1.3.6.1.4.1.318",	// PowerNet-MIB { iso org(3) dod(6) internet(1) private(4) enterprises(1) apc(318) }
+		SubagentOID: ".1.3.6.1.4.1.318.1.1",	// PowerNet-MIB { iso org(3) dod(6) internet(1) private(4) enterprises(1) apc(318) products(1) hardware(1) }
 		Username: "",
 		Password: "",
 	}
@@ -111,6 +112,8 @@ func main() {
 		os.Exit(2)
 	}
 	fmt.Printf("Contact with UPS %q (%s) successful.\n", myUPS.Name, myUPS.Description)
+
+/*	// debug stuff
 	commands, err := myUPS.GetCommands()
 	if err != nil {
 		fmt.Printf("could not read list of commands for UPS %q: %v\n", myUPS.Name, err)
@@ -129,65 +132,66 @@ func main() {
 			fmt.Printf("%s: %v (%s)\n", vars.Name, vars.Value, vars.Description)
 		}
 	}
+*/
 	// We ought to do some magic mapping between the MIB and the NUT variables... they do not exactly overlap
 
 	var oneMap = &[]oneOID{
-		{"battery.charge", 100, pdu.VariableTypeInteger, "", ""},
-		{"battery.charge.low", 10, pdu.VariableTypeInteger, "", ""},
-		{"battery.charge.warning", 50, pdu.VariableTypeInteger, "", ""},
-		{"battery.mfr.date", "2022/02/18", pdu.VariableTypeOctetString, "", ""},	// date YYYY/MM/DD
-		{"battery.runtime", 3720, pdu.VariableTypeInteger, "", ""},
-		{"battery.runtime.low", 120, pdu.VariableTypeInteger, "", ""},
-		{"battery.temperature", 270, pdu.VariableTypeInteger, "", ""},	// divide by 10
-		{"battery.type", "PbAc", pdu.VariableTypeOctetString, "", ""},
-		{"battery.voltage", 275, pdu.VariableTypeInteger, "", ""},		// divide by 10
-		{"battery.voltage.nominal", 240, pdu.VariableTypeInteger, "", ""}, // divide by 10
-		{"device.mfr", "American Power Conversion", pdu.VariableTypeOctetString, "", ""},
-		{"device.model", "Smart-UPS 1000", pdu.VariableTypeOctetString, "", ""},
-		{"device.serial", "AS0632330748", pdu.VariableTypeOctetString, "", ""},
-		{"device.type", "ups", pdu.VariableTypeOctetString, "", ""},
-		{"driver.name", "usbhid-ups", pdu.VariableTypeOctetString, "", ""},
-		{"driver.parameter.bus", "001", pdu.VariableTypeOctetString, "", ""},
-		{"driver.parameter.pollfreq", 30, pdu.VariableTypeInteger, "", ""},
-		{"driver.parameter.pollinterval", 2, pdu.VariableTypeInteger, "", ""},
-		{"driver.parameter.port", "auto", pdu.VariableTypeOctetString, "", ""},
-		{"driver.parameter.product", "Smart-UPS 1000 FW:652.13.I USB FW:7.3", pdu.VariableTypeOctetString, "", ""},
-		{"driver.parameter.productid", "0002", pdu.VariableTypeOctetString, "", ""},
-		{"driver.parameter.serial", "AS0632330748", pdu.VariableTypeOctetString, "", ""},
-		{"driver.parameter.synchronous", "no", pdu.VariableTypeOctetString, "", ""},
-		{"driver.parameter.vendor", "American Power Conversion", pdu.VariableTypeOctetString, "", ""},
-		{"driver.parameter.vendorid", "051D", pdu.VariableTypeOctetString, "", ""},
-		{"driver.version", "2.7.4", pdu.VariableTypeOctetString, "", ""},
-		{"driver.version.data", "APC HID 0.96", pdu.VariableTypeOctetString, "", ""},
-		{"driver.version.internal", "0.41", pdu.VariableTypeOctetString, "", ""},
-		{"input.sensitivity", "medium", pdu.VariableTypeOctetString, "", ""},
-		{"input.transfer.high", 2530, pdu.VariableTypeInteger, "", ""},	//divide by 10
-		{"input.transfer.low", 2080, pdu.VariableTypeInteger, "", ""},// divide by 10
-		{"input.voltage", 2260, pdu.VariableTypeInteger, "", ""},	// divide by 10
-		{"output.current", 46, pdu.VariableTypeInteger, "", ""},	// divide by 100
-		{"output.frequency", 500, pdu.VariableTypeInteger, "", ""},	// divide by 10
-		{"output.voltage", 2260, pdu.VariableTypeInteger, "", ""},	// divide by 10
-		{"output.voltage.nominal", 2300, pdu.VariableTypeInteger, "", ""},	// divide by 10
-		{"ups.beeper.status", "disabled", pdu.VariableTypeOctetString, "", ""},
-		{"ups.delay.shutdown", 20, pdu.VariableTypeInteger, "", ""},
-		{"ups.delay.start", 30, pdu.VariableTypeInteger, "", ""},
-		{"ups.firmware", "652.13.I", pdu.VariableTypeOctetString, "", ""},
-		{"ups.firmware.aux", "7.3", pdu.VariableTypeOctetString, "", ""},
-		{"ups.load", 169, pdu.VariableTypeGauge32, "", ""},		// divide by 10
-		{"ups.mfr", "American Power Conversion", pdu.VariableTypeOctetString, "", ""},
-		{"ups.mf22r.date", "2006/08/03", pdu.VariableTypeOctetString, "", ""},	// date YYYY/MM/DD
-		{"ups.model", "Smart-UPS 1000", pdu.VariableTypeOctetString, "", ""},
-		{"ups.productid", "0002", pdu.VariableTypeOctetString, "", ""},
-		{"ups.serial", "AS0632330748", pdu.VariableTypeOctetString, "", ""},
-		{"ups.status", "OL", pdu.VariableTypeOctetString, "", ""},
-		{"ups.test.result", "No test initiated", pdu.VariableTypeOctetString, "", ""},
-		{"ups.timer.reboot", -1, pdu.VariableTypeInteger, "", ""},
-		{"ups.timer.shutdown", -1, pdu.VariableTypeInteger, "", ""},
-		{"ups.timer.start", -1, pdu.VariableTypeInteger, "", ""},
-		{"ups.vendorid", "051d", pdu.VariableTypeOctetString, "", ""},
+		{"battery.charge", 100, pdu.VariableTypeInteger, "", "", ""},
+		{"battery.charge.low", 10, pdu.VariableTypeInteger, "", "", ""},
+		{"battery.charge.warning", 50, pdu.VariableTypeInteger, "", "", ""},
+		{"battery.mfr.date", "2022/02/18", pdu.VariableTypeOctetString, "", "", ""},	// date YYYY/MM/DD
+		{"battery.runtime", 3720, pdu.VariableTypeInteger, ".1.1.1.2.2.3.0", "", "The UPS battery run time remaining before battery exhaustion."},
+		{"battery.runtime.low", 120, pdu.VariableTypeInteger, "", "", ""},
+		{"battery.temperature", 270, pdu.VariableTypeInteger, ".1.1.1.2.3.13.0", "PowerNet-MIB::upsHighPrecExtdBatteryTemperature", "The current internal UPS temperature expressed in tenths of degrees Celsius. Can be negative."},	// divide by 10
+		{"battery.type", "PbAc", pdu.VariableTypeOctetString, "", "", ""},
+		{"battery.voltage", 275, pdu.VariableTypeInteger, "", "", ""},		// divide by 10
+		{"battery.voltage.nominal", 240, pdu.VariableTypeInteger, "", "", ""}, // divide by 10
+		{"device.mfr", "American Power Conversion", pdu.VariableTypeOctetString, "", "", ""},
+		{"device.model", "Smart-UPS 1000", pdu.VariableTypeOctetString, "", "", ""},
+		{"device.serial", "AS0632330748", pdu.VariableTypeOctetString, "", "", ""},
+		{"device.type", "ups", pdu.VariableTypeOctetString, "", "", ""},
+		{"driver.name", "usbhid-ups", pdu.VariableTypeOctetString, "", "", ""},
+		{"driver.parameter.bus", "001", pdu.VariableTypeOctetString, "", "", ""},
+		{"driver.parameter.pollfreq", 30, pdu.VariableTypeInteger, "", "", ""},
+		{"driver.parameter.pollinterval", 2, pdu.VariableTypeInteger, "", "", ""},
+		{"driver.parameter.port", "auto", pdu.VariableTypeOctetString, "", "", ""},
+		{"driver.parameter.product", "Smart-UPS 1000 FW:652.13.I USB FW:7.3", pdu.VariableTypeOctetString, "", "", ""},
+		{"driver.parameter.productid", "0002", pdu.VariableTypeOctetString, "", "", ""},
+		{"driver.parameter.serial", "AS0632330748", pdu.VariableTypeOctetString, "", "", ""},
+		{"driver.parameter.synchronous", "no", pdu.VariableTypeOctetString, "", "", ""},
+		{"driver.parameter.vendor", "American Power Conversion", pdu.VariableTypeOctetString, "", "", ""},
+		{"driver.parameter.vendorid", "051D", pdu.VariableTypeOctetString, "", "", ""},
+		{"driver.version", "2.7.4", pdu.VariableTypeOctetString, "", "", ""},
+		{"driver.version.data", "APC HID 0.96", pdu.VariableTypeOctetString, "", "", ""},
+		{"driver.version.internal", "0.41", pdu.VariableTypeOctetString, "", "", ""},
+		{"input.sensitivity", "medium", pdu.VariableTypeOctetString, "", "", ""},
+		{"input.transfer.high", 2530, pdu.VariableTypeInteger, "", "", ""},	//divide by 10
+		{"input.transfer.low", 2080, pdu.VariableTypeInteger, "", "", ""},// divide by 10
+		{"input.voltage", 2260, pdu.VariableTypeInteger, ".1.1.1.3.2.1.0", "", "The current utility line voltage in VAC."},	// divide by 10
+		{"output.current", 46, pdu.VariableTypeInteger, "", "", ""},	// divide by 100
+		{"output.frequency", 500, pdu.VariableTypeInteger, "", "", ""},	// divide by 10
+		{"output.voltage", 2260, pdu.VariableTypeInteger, ".1.1.1.4.2.1.0", "", "The output voltage of the UPS system in VAC."},	// divide by 10
+		{"output.voltage.nominal", 2300, pdu.VariableTypeInteger, "", "", ""},	// divide by 10
+		{"ups.beeper.status", "disabled", pdu.VariableTypeOctetString, "", "", ""},
+		{"ups.delay.shutdown", 20, pdu.VariableTypeInteger, "", "", ""},
+		{"ups.delay.start", 30, pdu.VariableTypeInteger, "", "", ""},
+		{"ups.firmware", "652.13.I", pdu.VariableTypeOctetString, "", "", ""},
+		{"ups.firmware.aux", "7.3", pdu.VariableTypeOctetString, "", "", ""},
+		{"ups.load", 169, pdu.VariableTypeGauge32, ".1.1.1.4.2.3.0", "", "The current UPS load expressed in percent of rated capacity."},		// divide by 10
+		{"ups.mfr", "American Power Conversion", pdu.VariableTypeOctetString, "", "", ""},
+		{"ups.mf22r.date", "2006/08/03", pdu.VariableTypeOctetString, "", "", ""},	// date YYYY/MM/DD
+		{"ups.model", "Smart-UPS 1000", pdu.VariableTypeOctetString, "", "", ""},
+		{"ups.productid", "0002", pdu.VariableTypeOctetString, "", "", ""},
+		{"ups.serial", "AS0632330748", pdu.VariableTypeOctetString, "", "", ""},
+		{"ups.status", "OL", pdu.VariableTypeOctetString, "", "", ""},
+		{"ups.test.result", "No test initiated", pdu.VariableTypeOctetString, "", "", ""},
+		{"ups.timer.reboot", -1, pdu.VariableTypeInteger, "", "", ""},
+		{"ups.timer.shutdown", -1, pdu.VariableTypeInteger, "", "", ""},
+		{"ups.timer.start", -1, pdu.VariableTypeInteger, "", "", ""},
+		{"ups.vendorid", "051d", pdu.VariableTypeOctetString, "", "", ""},
 	}
-	fmt.Println("NUT var name\tValue\tType\tOID Description")
+	fmt.Println("NUT var name\tValue\tType\tOID Name Description")
 	for _, apcRawData := range *oneMap {
-		fmt.Printf("%s:\t%v\t(%s)\t=>%s %q\n", apcRawData.NUTvar, apcRawData.NUTvalue, apcRawData.NUTtype.String(), apcRawData.SNMPoid, apcRawData.SNMPdesc)
+		fmt.Printf("%s:\t%v\t(%s)\t=>%s %q %q\n", apcRawData.NUTvar, apcRawData.NUTvalue, apcRawData.NUTtype.String(), apcRawData.SNMPoid, apcRawData.SNMPname, apcRawData.SNMPdesc)
 	}
 }
